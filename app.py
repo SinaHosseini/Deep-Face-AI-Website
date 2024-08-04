@@ -1,5 +1,4 @@
 import os
-import cv2
 import bcrypt
 from datetime import datetime
 from flask import Flask, render_template, request, redirect, session, url_for

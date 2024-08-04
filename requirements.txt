@@ -1,3 +1,4 @@
 flask
-deepface
 sqlmodel
+bcrypt
+pydantic
