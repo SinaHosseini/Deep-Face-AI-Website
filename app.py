@@ -1,12 +1,13 @@
 import os
 import bcrypt
 from datetime import datetime
-from flask import Flask, render_template, request, redirect, session, url_for
+from flask import Flask, flash, render_template, request, redirect, session as flask_session, url_for
 from sqlmodel import SQLModel, Field, Session, select, create_engine
 from pydantic import BaseModel
 
 
 app = Flask("Analyze Face")
+app.secret_key = "my secret key"
 app.config["UPLOAD_FOLDER"] = "./uploads"
 app.config["ALLOWED_EXTENSION"] = {"png", "jpg", "jpeg"}
 
@@ -46,7 +47,6 @@ class LoginModel(BaseModel):
     password: str
 
 
-
 def allowed_file(filename):
     return True
 
@@ -66,38 +66,54 @@ def login():
                 username=request.form["username"], password=request.form["password"]
             )
         except:
-            print("Type error")
+            flash("Type error", "danger")
             return redirect(url_for("login"))
 
         with Session(engine) as db_session:
             statement = select(User).where(User.username == login_model.username)
             result = db_session.exec(statement).first()
 
-        if result and bcrypt.checkpw(login_model.password.encode('utf-8'), result.password.encode('utf-8')):
-            print("Welcome, you are logged in")
-            return redirect(url_for("upload"))
+        if result:
+            if bcrypt.checkpw(
+                login_model.password.encode("utf-8"), result.password.encode("utf-8")
+            ):
+                flask_session["user_id"] = result.id
+                return redirect(url_for("upload"))
+            else:
+                flash("Password is incorrect", "danger")
+                return redirect(url_for("login"))
         else:
-            print("Username or password is incorrect")
+            flash("Username is incorrect", "danger")
             return redirect(url_for("login"))
+
+
+@app.route("/logout")
+def logout():
+    flask_session.pop("user_id")
+    return redirect(url_for("index"))
 
 
 @app.route("/upload", methods=["GET", "POST"])
 def upload():
-    if request.method == "GET":
-        return render_template("upload.html")
+    if flask_session.get("user_id"):
+        flash("Welcome, you are logged in", "success")
+        if request.method == "GET":
+            return render_template("upload.html")
 
-    elif request.method == "POST":
-        my_image = request.files["file"]
-        if my_image.filename == "":
-            return redirect(url_for("upload"))
-        else:
-            if my_image and allowed_file(my_image.filename):
-                save_path = os.path.join(app.config["UPLOAD_FOLDER"], my_image.filename)
-                my_image.save(save_path)
-                result = DeepFace.analyze(img_path=save_path, actions=["age"])
+        elif request.method == "POST":
+            my_image = request.files["file"]
+            if my_image.filename == "":
+                return redirect(url_for("upload"))
+            else:
+                if my_image and allowed_file(my_image.filename):
+                    save_path = os.path.join(app.config["UPLOAD_FOLDER"], my_image.filename)
+                    my_image.save(save_path)
+                    result = DeepFace.analyze(img_path=save_path, actions=["age"])
 
-            return render_template("result.html", age=result[0]["age"])
+                return render_template("result.html", age=result[0]["age"])
 
+    else:
+        return redirect(url_for("index"))
 
 @app.route("/register", methods=["GET", "POST"])
 def register():
@@ -118,14 +134,16 @@ def register():
                 join_time=str(datetime.now()),
             )
         except:
-            print("type error")
-            return redirect(url_for("register"))
-        
-        if register_data.password != register_data.confirm_password:
-            print("Passwords do not match")
+            flash("Type error", "danger")
             return redirect(url_for("register"))
 
-        hashed_password = bcrypt.hashpw(register_data.password.encode('utf-8'), bcrypt.gensalt())
+        if register_data.password != register_data.confirm_password:
+            flash("Passwords do not match", "danger")
+            return redirect(url_for("register"))
+
+        hashed_password = bcrypt.hashpw(
+            register_data.password.encode("utf-8"), bcrypt.gensalt()
+        )
 
         with Session(engine) as db_session:
             statement = select(User).where(User.username == register_data.username)
@@ -141,16 +159,16 @@ def register():
                     age=register_data.age,
                     country=register_data.country,
                     city=register_data.city,
-                    password=hashed_password.decode('utf-8'),
+                    password=hashed_password.decode("utf-8"),
                     join_time=str(datetime.now()),
                 )
 
                 db_session.add(user)
                 db_session.commit()
-            print("Your register done successfully")
+            flash("Your register done successfully", "success")
             return redirect(url_for("login"))
         else:
-            print("Username already exist, Try another username")
+            flash("Username already exist, Try another username", "danger")
             return redirect(url_for("register"))
 
 

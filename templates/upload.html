@@ -55,6 +55,9 @@
                 <li><a class="dropdown-item" href="https://t.me/mr_sshv"><b>Contact Me</b></a></li>
             </li>
           </ul>
+          <li class="nav-item">
+            <a class="nav-link" href="/logout" style="padding-right: 50px;">Logout</a>
+          </li>
           </li>
           </ul>
         </div>
@@ -64,6 +67,15 @@
     <center>
       <div class="card mt-5" style="width: 18rem; height: 20rem;">
         <div class="card-body">
+          {% with messages = get_flashed_messages(with_categories=True) %}
+                {% if messages %}
+                  {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}" role="alert">
+                      {{ message }}
+                    </div>
+                  {% endfor %}
+                {% endif %}
+              {% endwith %}
           <h2 class="card-title" style="text-align: center;">Upload</h2>
           <hr>
           <form method="post" enctype="multipart/form-data">

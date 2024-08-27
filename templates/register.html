@@ -62,6 +62,9 @@
                                 <li><a class="dropdown-item" href="https://t.me/mr_sshv"><b>Contact Me</b></a></li>
                         </li>
                     </ul>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/logout" style="padding-right: 50px;">Logout</a>
+                    </li>
                     </li>
                     </ul>
                 </div>
@@ -121,6 +124,17 @@
                                 <label class="form-label" style="margin-right: 115px;">Confirm password</label>
                                 <input type="password" class="form-control" name="confirm_password" />
                             </div>
+
+                            {% with messages = get_flashed_messages(with_categories=True) %}
+                            {% if messages %}
+                            {% for category, message in messages %}
+                            <div class="alert alert-{{ category }}" role="alert">
+                                {{ message }}
+                            </div>
+                            {% endfor %}
+                            {% endif %}
+                            {% endwith %}
+
                             <hr>
                             <div class="modal-footer">
                                 <button type="submit" class="btn btn-primary text-end">Submit</button>
