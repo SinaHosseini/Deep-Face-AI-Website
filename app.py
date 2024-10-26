@@ -1,32 +1,23 @@
 import os
 import bcrypt
 from datetime import datetime
-from flask import Flask, flash, render_template, request, redirect, session as flask_session, url_for
-from sqlmodel import SQLModel, Field, Session, select, create_engine
+from flask import (
+    Flask,
+    flash,
+    render_template,
+    request,
+    redirect,
+    session as flask_session,
+    url_for,
+)
 from pydantic import BaseModel
-
+from database import get_user_by_username, create_user
+from sqlmodel import Session
 
 app = Flask("Analyze Face")
 app.secret_key = "my secret key"
 app.config["UPLOAD_FOLDER"] = "./uploads"
 app.config["ALLOWED_EXTENSION"] = {"png", "jpg", "jpeg"}
-
-
-class User(SQLModel, table=True):
-    id: int = Field(default=None, primary_key=True)
-    first_name: str = Field()
-    last_name: str = Field()
-    email: str = Field()
-    username: str = Field()
-    age: int = Field()
-    country: str = Field()
-    city: str = Field()
-    password: str = Field()
-    join_time: str = Field()
-
-
-engine = create_engine("sqlite:///./database.db", echo=True)
-SQLModel.metadata.create_all(engine)
 
 
 class RegisterModel(BaseModel):
@@ -69,15 +60,13 @@ def login():
             flash("Type error", "danger")
             return redirect(url_for("login"))
 
-        with Session(engine) as db_session:
-            statement = select(User).where(User.username == login_model.username)
-            result = db_session.exec(statement).first()
+        user = get_user_by_username(login_model.username)
 
-        if result:
+        if user:
             if bcrypt.checkpw(
-                login_model.password.encode("utf-8"), result.password.encode("utf-8")
+                login_model.password.encode("utf-8"), user.password.encode("utf-8")
             ):
-                flask_session["user_id"] = result.id
+                flask_session["user_id"] = user.id
                 return redirect(url_for("upload"))
             else:
                 flash("Password is incorrect", "danger")
@@ -106,7 +95,9 @@ def upload():
                 return redirect(url_for("upload"))
             else:
                 if my_image and allowed_file(my_image.filename):
-                    save_path = os.path.join(app.config["UPLOAD_FOLDER"], my_image.filename)
+                    save_path = os.path.join(
+                        app.config["UPLOAD_FOLDER"], my_image.filename
+                    )
                     my_image.save(save_path)
                     result = DeepFace.analyze(img_path=save_path, actions=["age"])
 
@@ -114,6 +105,7 @@ def upload():
 
     else:
         return redirect(url_for("index"))
+
 
 @app.route("/register", methods=["GET", "POST"])
 def register():
@@ -145,26 +137,20 @@ def register():
             register_data.password.encode("utf-8"), bcrypt.gensalt()
         )
 
-        with Session(engine) as db_session:
-            statement = select(User).where(User.username == register_data.username)
-            result = db_session.exec(statement).first()
+        user = get_user_by_username(register_data.username)
 
-        if not result:
-            with Session(engine) as db_session:
-                user = User(
-                    first_name=register_data.first_name,
-                    last_name=register_data.last_name,
-                    email=register_data.email,
-                    username=register_data.username,
-                    age=register_data.age,
-                    country=register_data.country,
-                    city=register_data.city,
-                    password=hashed_password.decode("utf-8"),
-                    join_time=str(datetime.now()),
-                )
-
-                db_session.add(user)
-                db_session.commit()
+        if not user:
+            create_user(
+                first_name=register_data.first_name,
+                last_name=register_data.last_name,
+                email=register_data.email,
+                username=register_data.username,
+                age=register_data.age,
+                country=register_data.country,
+                city=register_data.city,
+                password=hashed_password.decode("utf-8"),
+                join_time=str(datetime.now()),
+            )
             flash("Your register done successfully", "success")
             return redirect(url_for("login"))
         else:
@@ -187,3 +173,29 @@ def bmr():
             result = (10 * weight) + (6.25 * height) - (5 * age) - 16
 
         return render_template("resultBMR.html", BMR=result)
+
+
+@app.route("/read-your-mind", methods=["GET", "POST"])
+def read_your_mind():
+    if request.method == "POST":
+        user_number = request.form["number"]
+
+        return redirect(url_for("read_your_mind_result", number=user_number))
+
+    return render_template("read-your-mind.html")
+
+
+@app.route("/read-your-mind/result")
+def read_your_mind_result():
+    suggested_number = request.args.get("number")
+
+    return render_template("read-your-mind-result.html", number=suggested_number)
+
+
+@app.route("/pose-detection")
+def pose_detection():
+    return render_template("pose-detection.html")
+
+
+if __name__ == "__main__":
+    app.run(debug=True)

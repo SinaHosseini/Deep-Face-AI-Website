@@ -1,0 +1,24 @@
+{% extends 'layout.html' %}
+
+{% block title %} read your mind {% endblock %}
+
+{% block content %}
+<div class="card mt-5 mx-auto" style="width: 18rem; height: 15rem;">
+    <div class="card-body">
+        <h3 class="card-title text-center">Read Your Mind</h5>
+            <hr>
+            <div class="card-text">
+                What number are you thinking of?
+                <br>
+                <br>
+                <form method="post">
+                    <input class="form-control" type="number" name="number" value="0">
+                    <div class="modal-footer">
+                        <button type="submit" class="btn btn-primary mt-3 text-end">Submit</button>
+                    </div>
+                </form>
+            </div>
+    </div>
+</div>
+
+{% endblock %}

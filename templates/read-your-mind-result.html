@@ -1,0 +1,52 @@
+{% extends 'layout.html' %}
+
+{% block title %} read your mind {% endblock %}
+
+{% block content %}
+<style>
+    #my-number{
+        display: none;
+    }
+</style>
+
+<div class="card mt-5 mx-auto" style="width: 18rem; height: 16rem;">
+    <div class="card-body">
+        <h4 class="card-title text-center">I'm reading your mind</h4>
+        <br>
+        <div class="card-text mt-3">
+            <div class="d-flex justify-content-end">
+                <button class="btn btn-primary" onclick="start_progress()">Ok</button>
+            </div>
+            <div id="progress-bar" class="progress mt-3" role="progressbar" aria-label="Default striped example" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+                <div id="progress-bar-child" class="progress-bar progress-bar-striped" style="width: 0%"></div>
+            </div>
+            <h4 id="my-number" class="mt-5 text-center">
+                you are thinking to <span class="text-success">{{number}}</span>
+            </h4>
+        </div>
+    </div>
+</div>
+
+
+<script>
+    function sleep(ms){
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
+    
+        async function start_progress(){
+            var my_progress_bar = document.getElementById("progress-bar");
+            var my_progress_bar_child = document.getElementById("progress-bar-child");
+            var my_number  = document.getElementById("my-number");
+    
+            for(var i = 0; i <= 100; i++){
+                my_progress_bar.setAttribute("aria-valuenow", i);
+                my_progress_bar_child.style.width = i + "%";
+                await sleep(30); 
+            }
+    
+            my_number.style.display = "block";
+        }
+    </script>
+    
+
+{% endblock %}

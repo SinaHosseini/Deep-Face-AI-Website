@@ -32,10 +32,15 @@
     margin-top: 100px !important;
 }
 
-#bmr{
+#bmr {
     text-align: center;
     display: flex;
     flex-direction: column;
     align-items: center;
     background-image: var(--bs-gradient);
+}
+
+body {
+    font-family: 'Vazirmatn' !important;
+    /* font-size: 22px; */
 }
